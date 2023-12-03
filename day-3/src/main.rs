@@ -194,7 +194,7 @@ fn main() {
     let example1 = include_str!("./example1.txt");
     let example2 = include_str!("./example2.txt");
 
-    println!("DAY-1");
+    println!("DAY-3");
     println!("example part1: {}", part1(example1));
     println!("solution part1: {}", part1(input1));
     println!("example part2: {}", part2(example2));
