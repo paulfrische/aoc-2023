@@ -8,6 +8,7 @@ struct Parser<'a> {
     pos: usize,
     numbers: Vec<(usize, usize)>,
     symbols: Vec<usize>,
+    gears: Vec<usize>,
 }
 
 impl<'a> Parser<'a> {
@@ -18,6 +19,7 @@ impl<'a> Parser<'a> {
             pos: 0,
             numbers: Vec::new(),
             symbols: Vec::new(),
+            gears: Vec::new(),
         }
     }
 
@@ -31,18 +33,24 @@ impl<'a> Parser<'a> {
             if let Some(c) = self.current {
                 if c.is_ascii_digit() {
                     self.parse_number();
-                } else if c != '.' && c != '\n' {
+                } else if c != '.' && c != '\n' && c != '*' {
                     self.symbols.push(self.pos);
+                    self.advance()
+                } else if c == '*' {
+                    self.symbols.push(self.pos);
+                    self.gears.push(self.pos);
+                    self.advance()
+                } else {
+                    self.advance()
                 }
             }
-            self.advance()
         }
     }
 
     fn parse_number(&mut self) {
         let start = self.pos;
         while !self.current.is_none() && self.current.unwrap().is_ascii_digit() {
-            self.advance()
+            self.advance();
         }
         let end = self.pos;
         self.numbers.push((start, end));
@@ -56,10 +64,16 @@ struct BluePrint<'a> {
     height: usize,
     numbers: Vec<(usize, usize)>,
     symbols: Vec<usize>,
+    gears: Vec<usize>,
 }
 
 impl<'a> BluePrint<'a> {
-    fn new(text: &'a str, numbers: Vec<(usize, usize)>, symbols: Vec<usize>) -> Self {
+    fn new(
+        text: &'a str,
+        numbers: Vec<(usize, usize)>,
+        symbols: Vec<usize>,
+        gears: Vec<usize>,
+    ) -> Self {
         let width = text.lines().next().unwrap().len() + 1;
         let height = text.lines().collect_vec().len() + 1;
 
@@ -69,7 +83,31 @@ impl<'a> BluePrint<'a> {
             height,
             numbers,
             symbols,
+            gears,
         }
+    }
+
+    fn gear_ratios(&self) -> Vec<i32> {
+        let mut ratios = Vec::new();
+        for g in self.gears.iter() {
+            let mut numbers = Vec::new();
+            let (gx, gy) = self.text_to_board(*g);
+            'nums: for n in self.numbers.iter() {
+                for di in (n.0)..(n.1) {
+                    let (dx, dy) = self.text_to_board(di);
+                    if dx.abs_diff(gx) <= 1 && dy.abs_diff(gy) <= 1 {
+                        numbers.push(self.text.get((n.0)..(n.1)).unwrap().parse::<i32>().unwrap());
+                        continue 'nums;
+                    }
+                }
+            }
+
+            if numbers.len() == 2 {
+                ratios.push(numbers[0] * numbers[1]);
+            }
+        }
+
+        ratios
     }
 
     fn numbers_with_symbol(&self) -> Vec<i32> {
@@ -135,14 +173,19 @@ impl<'a> BluePrint<'a> {
 fn part1(input: &str) -> i32 {
     let mut parser = Parser::new(input);
     parser.parse();
-    let blueprint = BluePrint::new(parser.text, parser.numbers, parser.symbols);
+    let blueprint = BluePrint::new(parser.text, parser.numbers, parser.symbols, parser.gears);
     let nums = blueprint.numbers_with_symbol();
     let v = nums.iter().fold(0, |a, v| a + v);
     v
 }
 
 fn part2(input: &str) -> i32 {
-    0
+    let mut parser = Parser::new(input);
+    parser.parse();
+    let blueprint = BluePrint::new(parser.text, parser.numbers, parser.symbols, parser.gears);
+    let nums = blueprint.gear_ratios();
+    let v = nums.iter().fold(0, |a, v| a + v);
+    v
 }
 
 fn main() {
