@@ -54,7 +54,7 @@ fn part2(input: &str) -> i32 {
                 last = Some(d);
             }
 
-            (_, l) = l.split_at(1);
+            l = &l[1..];
         }
 
         sum += str::parse::<i32>(&format!("{}{}", first.unwrap(), last.unwrap())).unwrap();
